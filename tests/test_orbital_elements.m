@@ -1,4 +1,3 @@
-
 % Automated validation tests for orbital mechanics functions.
 clear; clc;
 
@@ -17,7 +16,7 @@ coe2 = state_to_elements(R0,V0,mu);
 assert(norm(R1-R0) < 1e-6, 'Elliptical position round-trip failed.');
 assert(norm(V1-V0) < 1e-9, 'Elliptical velocity round-trip failed.');
 
-%% Test 2: Circular inclined orbit
+%% Test 2: Circular inclined orbit and other edge cases
 cases = [
     7000, 0.0, 30*deg, 40*deg, 60*deg, 10*deg;
     8000, 0.2, 0,      0,      45*deg, 70*deg;
@@ -36,9 +35,20 @@ for k = 1:size(cases,1)
         'Velocity round-trip failed for edge case %d.',k);
 end
 
-fprintf('Orbital-element conversion tests passed.\n');
+%% Test 3: Circular retrograde equatorial orbit
+coe = [7000, 0, 180*deg, 0, 0, 60*deg];
 
-%% Test 3: Lambert solver — Curtis Example 5.2
+[R0,V0] = elements_to_state(coe,mu);
+coe2 = state_to_elements(R0,V0,mu);
+[R1,V1] = elements_to_state(coe2,mu);
+
+assert(norm(R1-R0) < 1e-6, ...
+    'Retrograde circular position round-trip failed.');
+
+assert(norm(V1-V0) < 1e-9, ...
+    'Retrograde circular velocity round-trip failed.');
+
+%% Test 4: Lambert solver — Curtis Example 5.2
 muLambert = 398600;
 R1 = [5000 10000 2100];
 R2 = [-14600 2500 7000];
@@ -61,6 +71,8 @@ endpointError = norm(Y(end,1:3)-R2);
 assert(endpointError < 1e-3, ...
     'Lambert propagation endpoint error is too large.');
 
+fprintf('Orbital-element conversion tests passed.\n');
+fprintf('Retrograde circular orbit test passed.\n');
 fprintf('Lambert reference test passed. Endpoint error: %.3e km\n', ...
     endpointError);
 
