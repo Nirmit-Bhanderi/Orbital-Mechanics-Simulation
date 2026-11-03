@@ -6,8 +6,10 @@ function coe = state_to_elements(R, V, mu)
 %   using a documented convention rather than attempting to infer them.
 
     R = R(:); V = V(:);
-    if numel(R) ~= 3 || numel(V) ~= 3 || norm(R) == 0 || mu <= 0
-        error('R and V must be 3-vectors, R nonzero, and mu positive.');
+    if numel(R) ~= 3 || numel(V) ~= 3 || ...
+       ~all(isfinite(R)) || ~all(isfinite(V)) || ...
+       ~isscalar(mu) || ~isfinite(mu) || mu <= 0 || norm(R) == 0
+        error('R and V must be finite 3-vectors, R nonzero, and mu positive.');
     end
     r = norm(R); v = norm(V);
     hvec = cross(R,V); h = norm(hvec);
@@ -53,14 +55,19 @@ function coe = state_to_elements(R, V, mu)
         argp = 0;
     end
 
-    if e > tol
+        if e > tol
         nu = acos(max(-1,min(1,dot(evec,R)/(e*r))));
         if dot(R,V) < 0, nu = 2*pi-nu; end
     elseif n > tol
         nu = acos(max(-1,min(1,dot(nvec,R)/(n*r))));
         if R(3) < 0, nu = 2*pi-nu; end
     else
-        nu = mod(atan2(R(2),R(1)),2*pi);
+        % Circular equatorial orbit
+        if hvec(3) >= 0
+            nu = mod(atan2(R(2),R(1)),2*pi);
+        else
+            nu = mod(atan2(-R(2),R(1)),2*pi);
+        end
     end
     coe = [a,e,inc,raan,argp,nu];
 end
